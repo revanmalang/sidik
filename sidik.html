@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIDIK — Meja Forensik Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1B1D1F;
+    --bg-2:#17181A;
+    --panel:#26282C;
+    --panel-2:#2E3034;
+    --ink:#DAD6C9;
+    --ink-dim:#8B8B84;
+    --ink-faint:#5C5D58;
+    --line:#3A3C40;
+    --kraft:#4E9A6E;
+    --kraft-dim:#35694B;
+    --safe:#3FAE63;
+    --safe-bg:rgba(63,174,99,0.14);
+    --warn:#D3A24B;
+    --warn-bg:rgba(211,162,75,0.12);
+    --danger:#C1594F;
+    --danger-bg:rgba(193,89,79,0.12);
+    --unknown:#9C9C94;
+    --unknown-bg:rgba(156,156,148,0.12);
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(78,154,110,0.06), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .desk{max-width:980px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  .deskhead{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    padding-bottom:16px;margin-bottom:0;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    font-size:26px;color:var(--kraft);
+    text-shadow:0 0 14px rgba(78,154,110,0.4);
+  }
+  .brand h1{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:800;font-size:22px;letter-spacing:0.5px;
+    margin:0;color:var(--ink);
+  }
+  .brand h1 span{color:var(--kraft);}
+  .tagline{margin:2px 0 0;font-size:12.5px;color:var(--ink-dim);letter-spacing:0.3px;}
+  .case-tag{
+    font-family:'JetBrains Mono',monospace;
+    text-align:right;font-size:11px;color:var(--ink-faint);
+    border:1px dashed var(--line);padding:6px 10px;border-radius:var(--radius);
+    background:rgba(0,0,0,0.15);
+  }
+  .case-label{display:block;letter-spacing:1.5px;color:var(--ink-faint);}
+  .case-num{display:block;font-size:13px;color:var(--kraft);margin-top:2px;font-weight:700;}
+
+  /* ---------- tabs (folder metaphor) ---------- */
+  .tabs{display:flex;gap:4px;margin-top:18px;padding-left:4px;}
+  .tab{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;font-weight:700;letter-spacing:0.4px;
+    background:var(--bg-2);color:var(--ink-faint);
+    border:1px solid var(--line);border-bottom:none;
+    padding:10px 18px 9px;border-radius:6px 6px 0 0;
+    cursor:pointer;transform:translateY(3px);
+    transition:transform .15s ease, color .15s ease, background .15s ease;
+  }
+  .tab:hover{color:var(--ink);}
+  .tab.active{
+    background:var(--panel);color:var(--kraft);
+    transform:translateY(0);border-color:var(--line);
+  }
+  .folder{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:0 8px 8px 8px;
+    padding:22px;
+    min-height:200px;
+  }
+  @media (max-width:640px){ .folder{padding:16px;} }
+
+  /* ---------- image tab ---------- */
+  .grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;}
+  @media (max-width:760px){ .grid2{grid-template-columns:1fr;} }
+
+  .dropzone{
+    border:2px dashed var(--line);border-radius:var(--radius);
+    padding:34px 16px;text-align:center;cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+    background:rgba(0,0,0,0.12);
+  }
+  .dropzone:hover,.dropzone.drag{border-color:var(--kraft-dim);background:rgba(78,154,110,0.06);}
+  .dz-inner svg{opacity:0.55;margin-bottom:10px;}
+  .dropzone p{margin:0;font-size:13.5px;color:var(--ink-dim);line-height:1.6;}
+  .dropzone p span{display:block;font-size:11.5px;color:var(--ink-faint);}
+
+  .preview-wrap{margin-top:14px;}
+  .view-toggle{display:flex;gap:6px;margin-bottom:8px;}
+  .vt{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+    background:transparent;color:var(--ink-faint);border:1px solid var(--line);
+    padding:5px 10px;border-radius:20px;cursor:pointer;
+  }
+  .vt.active{background:var(--kraft);color:#1B1D1F;border-color:var(--kraft);}
+  .canvas-frame{
+    border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;background:#000;line-height:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .canvas-frame canvas{max-width:100%;height:auto;display:block;}
+  .hint{font-size:11.5px;color:var(--ink-faint);margin:8px 2px 0;line-height:1.5;}
+
+  .readout{
+    background:rgba(0,0,0,0.18);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;min-height:120px;
+  }
+  .readout h3{
+    margin:0 0 10px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:1.5px;color:var(--kraft-dim);
+  }
+  .empty-note{font-size:12.5px;color:var(--ink-faint);margin:0;}
+  .meta-row{
+    display:flex;justify-content:space-between;gap:10px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+  .meta-row:last-child{border-bottom:none;}
+  .meta-k{color:var(--ink-faint);}
+  .meta-v{color:var(--ink);text-align:right;word-break:break-word;max-width:60%;}
+  .meta-v.flag{color:var(--warn);}
+
+  .run-btn{
+    display:block;width:100%;margin-top:14px;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;
+    letter-spacing:1px;padding:12px;border-radius:var(--radius);
+    background:var(--kraft);color:#1B1D1F;border:none;cursor:pointer;
+    transition:background .15s ease, opacity .15s ease;
+  }
+  .run-btn:hover:not(:disabled){background:#63B686;}
+  .run-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+  /* ---------- text tab ---------- */
+  #textInput{
+    width:100%;min-height:220px;resize:vertical;
+    background:rgba(0,0,0,0.18);color:var(--ink);
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;line-height:1.6;
+  }
+  #textInput:focus{outline:1px solid var(--kraft-dim);}
+
+  /* ---------- report / stamp ---------- */
+  .report{
+    position:relative;margin-top:22px;
+    background:rgba(0,0,0,0.2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px 22px 22px;overflow:hidden;
+  }
+  .report h3{
+    margin:0 0 4px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:1.5px;color:var(--ink-faint);
+  }
+  .stamp{
+    position:absolute;top:16px;right:18px;
+    font-family:'JetBrains Mono',monospace;font-weight:800;font-size:13px;
+    letter-spacing:1.5px;padding:9px 14px;border-radius:6px;
+    border:2.5px solid currentColor;transform:rotate(-7deg) scale(0);
+    animation:stampIn .38s cubic-bezier(.2,1.4,.4,1) forwards;
+    animation-delay:.15s;
+  }
+  @keyframes stampIn{
+    0%{transform:rotate(-7deg) scale(1.6);opacity:0;}
+    70%{opacity:1;}
+    100%{transform:rotate(-7deg) scale(1);opacity:0.92;}
+  }
+  .status-AMAN{color:var(--safe);}
+  .status-MENCURIGAKAN{color:var(--warn);}
+  .status-PALSU{color:var(--danger);}
+  .status-TIDAK_DAPAT_DIVERIFIKASI{color:var(--unknown);}
+
+  .field{margin-top:16px;max-width:78%;}
+  @media (max-width:640px){ .field{max-width:100%;} }
+  .field-label{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;
+    letter-spacing:1.5px;color:var(--ink-faint);margin-bottom:6px;
+  }
+  .conf-bar-track{
+    height:8px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;
+  }
+  .conf-bar-fill{height:100%;border-radius:6px;transition:width .5s ease;}
+  .conf-num{font-family:'JetBrains Mono',monospace;font-size:12.5px;margin-top:5px;color:var(--ink-dim);}
+
+  .findings{margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:var(--ink);}
+  .findings li{margin-bottom:6px;}
+  .recommend{font-size:13px;line-height:1.65;color:var(--ink-dim);margin:0;}
+
+  footer.disclaimer{
+    margin-top:22px;font-size:11.5px;color:var(--ink-faint);
+    text-align:center;line-height:1.6;padding:0 10px;
+  }
+</style>
+</head>
+<body>
+<div class="desk">
+
+  <header class="deskhead">
+    <div class="brand">
+      <span class="brand-mark">&#9670;</span>
+      <div>
+        <h1>SIDIK</h1>
+        <p class="tagline">Sistem Identifikasi Dokumen, Imaji &amp; Konten &middot; Analisis Zero-Trust &middot; Berjalan Lokal di Perangkat Anda</p>
+      </div>
+    </div>
+    <div class="case-tag">
+      <span class="case-label">BERKAS KASUS №</span>
+      <span class="case-num" id="caseNum">— belum ada analisis —</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="image">BUKTI GAMBAR</button>
+    <button class="tab" data-tab="text">BUKTI TEKS</button>
+  </nav>
+
+  <main class="folder">
+
+    <!-- ===================== IMAGE PANEL ===================== -->
+    <section class="tabpanel" id="panel-image">
+      <div class="grid2">
+        <div class="col">
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept="image/*" hidden>
+            <div class="dz-inner">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#4E9A6E" stroke-width="1.6"><circle cx="10" cy="10" r="6.5"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
+              <p>Seret bukti gambar ke sini<span>atau klik untuk memilih file (JPG/PNG)</span></p>
+            </div>
+          </div>
+
+          <div class="preview-wrap" id="previewWrap" hidden>
+            <div class="view-toggle">
+              <button class="vt active" data-view="orig" type="button">Tampilan Asli</button>
+              <button class="vt" data-view="ela" type="button">Analisis ELA</button>
+            </div>
+            <div class="canvas-frame">
+              <canvas id="canvasOrig"></canvas>
+              <canvas id="canvasELA" hidden></canvas>
+            </div>
+            <p class="hint">Error Level Analysis (ELA) menyorot area dengan riwayat kompresi berbeda dari sekitarnya — area terang pada mode ELA berpotensi menandakan bagian yang disunting/ditempel.</p>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="readout" id="metaReadout">
+            <h3>PEMBACAAN METADATA</h3>
+            <p class="empty-note">Unggah gambar untuk memulai pembacaan metadata EXIF &amp; analisis ELA.</p>
+          </div>
+          <button class="run-btn" id="runImageBtn" disabled>JALANKAN ANALISIS FORENSIK</button>
+        </div>
+      </div>
+
+      <div class="report" id="reportImage" hidden></div>
+    </section>
+
+    <!-- ===================== TEXT PANEL ===================== -->
+    <section class="tabpanel" id="panel-text" hidden>
+      <textarea id="textInput" placeholder="Tempel teks / dokumen yang ingin diperiksa di sini... (minimal beberapa paragraf untuk hasil yang lebih bermakna)"></textarea>
+      <button class="run-btn" id="runTextBtn" style="margin-top:12px;">JALANKAN ANALISIS FORENSIK</button>
+      <div class="report" id="reportText" hidden></div>
+    </section>
+
+  </main>
+
+  <footer class="disclaimer">
+    &#9888; Alat ini menghasilkan sinyal indikatif berbasis heuristik lokal — seluruh pemrosesan berjalan di browser Anda, tidak ada file yang diunggah ke server manapun. Ini BUKAN pengganti laboratorium forensik digital bersertifikat untuk kebutuhan hukum/formal.
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   STATE & CASE NUMBER
+   ============================================================ */
+let exhibitCounter = 0;
+function nextCaseNumber(){
+  exhibitCounter++;
+  const d = new Date();
+  const ymd = d.getFullYear().toString() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  return 'SDK-' + ymd + '-' + String(exhibitCounter).padStart(3,'0');
+}
+function setCaseNumber(){
+  document.getElementById('caseNum').textContent = nextCaseNumber();
+}
+
+/* ============================================================
+   TABS
+   ============================================================ */
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.tab;
+    document.getElementById('panel-image').hidden = target!=='image';
+    document.getElementById('panel-text').hidden = target!=='text';
+  });
+});
+
+/* ============================================================
+   IMAGE UPLOAD
+   ============================================================ */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const previewWrap = document.getElementById('previewWrap');
+const canvasOrig = document.getElementById('canvasOrig');
+const canvasELA = document.getElementById('canvasELA');
+const metaReadout = document.getElementById('metaReadout');
+const runImageBtn = document.getElementById('runImageBtn');
+const reportImage = document.getElementById('reportImage');
+
+let currentFile = null;
+let currentImg = null;
+let exifData = null;
+let elaResult = null;
+
+dropzone.addEventListener('click', ()=>fileInput.click());
+dropzone.addEventListener('dragover', e=>{e.preventDefault();dropzone.classList.add('drag');});
+dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e=>{
+  e.preventDefault();dropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+document.querySelectorAll('.vt').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.vt').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    canvasOrig.hidden = view!=='orig';
+    canvasELA.hidden = view!=='ela';
+  });
+});
+
+function handleFile(file){
+  if(!file.type.startsWith('image/')){ alert('File harus berupa gambar.'); return; }
+  currentFile = file;
+  reportImage.hidden = true;
+  metaReadout.innerHTML = '<h3>PEMBACAAN METADATA</h3><p class="empty-note">Memproses berkas...</p>';
+  runImageBtn.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const arrayBuffer = e.target.result;
+    exifData = safeParseEXIF(arrayBuffer);
+
+    const img = new Image();
+    img.onload = function(){
+      currentImg = img;
+      drawWorkingCanvases(img);
+      renderMetadata(file, exifData);
+      previewWrap.hidden = false;
+      runImageBtn.disabled = false;
+    };
+    img.src = URL.createObjectURL(new Blob([arrayBuffer]));
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function drawWorkingCanvases(img){
+  const maxDim = 1100;
+  const scale = Math.min(1, maxDim/Math.max(img.width,img.height));
+  const w = Math.round(img.width*scale);
+  const h = Math.round(img.height*scale);
+  canvasOrig.width=w; canvasOrig.height=h;
+  canvasOrig.getContext('2d').drawImage(img,0,0,w,h);
+  canvasOrig.hidden=false; canvasELA.hidden=true;
+  document.querySelectorAll('.vt').forEach(b=>b.classList.toggle('active', b.dataset.view==='orig'));
+}
+
+function fmtBytes(b){
+  if(b<1024) return b+' B';
+  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
+  return (b/1024/1024).toFixed(2)+' MB';
+}
+
+function renderMetadata(file, exif){
+  let rows = '';
+  rows += metaRow('Nama Berkas', file.name);
+  rows += metaRow('Ukuran', fmtBytes(file.size));
+  rows += metaRow('Tipe MIME', file.type || 'tidak diketahui');
+  rows += metaRow('Dimensi', currentImg.width+' × '+currentImg.height+' px');
+
+  if(exif){
+    rows += metaRow('Metadata EXIF', 'Ditemukan');
+    if(exif.make || exif.model) rows += metaRow('Perangkat', [exif.make,exif.model].filter(Boolean).join(' '));
+    if(exif.dateTime) rows += metaRow('Tanggal Pengambilan', exif.dateTime);
+    if(exif.software) rows += metaRow('Software Tercatat', exif.software, isEditingSoftware(exif.software));
+    if(exif.exposureTime) rows += metaRow('Exposure Time', exif.exposureTime+' s');
+    if(exif.fNumber) rows += metaRow('F-Number', 'f/'+exif.fNumber.toFixed(1));
+    rows += metaRow('Data GPS', exif.gps ? 'Tersemat' : 'Tidak ada');
+  } else {
+    rows += metaRow('Metadata EXIF', 'Tidak ditemukan', true);
+  }
+
+  metaReadout.innerHTML = '<h3>PEMBACAAN METADATA</h3>' + rows;
+}
+function metaRow(k,v,flag){
+  return '<div class="meta-row"><span class="meta-k">'+k+'</span><span class="meta-v'+(flag?' flag':'')+'">'+escapeHtml(String(v))+'</span></div>';
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const EDIT_SOFTWARE = ['photoshop','gimp','lightroom','snapseed','picsart','canva','meitu','facetune','pixlr','affinity photo','capcut','vsco','paint.net','photoscape'];
+function isEditingSoftware(str){
+  const s = str.toLowerCase();
+  return EDIT_SOFTWARE.some(k=>s.includes(k));
+}
+
+/* ============================================================
+   EXIF PARSER (manual, JPEG only)
+   ============================================================ */
+function safeParseEXIF(arrayBuffer){
+  try{ return parseEXIF(arrayBuffer); }catch(err){ return null; }
+}
+function parseEXIF(arrayBuffer){
+  const view = new DataView(arrayBuffer);
+  if(view.getUint16(0) !== 0xFFD8) return null; // bukan JPEG
+  let offset = 2;
+  const length = view.byteLength;
+  while(offset < length-1){
+    if(view.getUint8(offset) !== 0xFF) break;
+    const marker = view.getUint8(offset+1);
+    if(marker === 0xE1){
+      const segLength = view.getUint16(offset+2);
+      const id = String.fromCharCode(view.getUint8(offset+4),view.getUint8(offset+5),view.getUint8(offset+6),view.getUint8(offset+7));
+      if(id === 'Exif'){
+        const tiffStart = offset+10;
+        return parseTIFF(view, tiffStart);
+      }
+      offset += 2 + segLength;
+      continue;
+    }
+    if(marker === 0xDA || marker === 0xD9) break;
+    const segLength = view.getUint16(offset+2);
+    offset += 2 + segLength;
+  }
+  return null;
+}
+function parseTIFF(view, tiffStart){
+  const bo = view.getUint16(tiffStart);
+  const little = bo === 0x4949;
+  const ifd0Offset = view.getUint32(tiffStart+4, little);
+  const ifd0 = readIFD(view, tiffStart, tiffStart+ifd0Offset, little);
+
+  const result = {
+    make: ifd0.tags[271], model: ifd0.tags[272], software: ifd0.tags[305],
+    dateTime: ifd0.tags[306], gps: !!ifd0.tags[34853]
+  };
+  if(ifd0.tags[34665]){
+    try{
+      const sub = readIFD(view, tiffStart, tiffStart+ifd0.tags[34665], little);
+      if(sub.tags[36867]) result.dateTime = sub.tags[36867];
+      if(sub.tags[33434]) result.exposureTime = sub.tags[33434];
+      if(sub.tags[33437]) result.fNumber = sub.tags[33437];
+    }catch(e){}
+  }
+  const hasAny = Object.values(result).some(v=>v!==undefined && v!==false && v!==null);
+  return hasAny ? result : null;
+}
+function readIFD(view, tiffStart, ifdOffset, little){
+  const tags = {};
+  const numEntries = view.getUint16(ifdOffset, little);
+  for(let i=0;i<numEntries;i++){
+    const entryOffset = ifdOffset + 2 + i*12;
+    const tag = view.getUint16(entryOffset, little);
+    const type = view.getUint16(entryOffset+2, little);
+    const count = view.getUint32(entryOffset+4, little);
+    const typeSize = {1:1,2:1,3:2,4:4,5:8,7:1,9:4,10:8}[type] || 1;
+    const totalSize = typeSize*count;
+    const valueFieldOffset = entryOffset+8;
+    let ptr = valueFieldOffset;
+    if(totalSize>4) ptr = tiffStart + view.getUint32(valueFieldOffset, little);
+    let value = null;
+    try{
+      if(type===2){
+        let str='';
+        for(let j=0;j<count-1;j++) str+=String.fromCharCode(view.getUint8(ptr+j));
+        value = str;
+      } else if(type===3){
+        value = view.getUint16(ptr, little);
+      } else if(type===4){
+        value = view.getUint32(ptr, little);
+      } else if(type===5){
+        const num = view.getUint32(ptr, little);
+        const den = view.getUint32(ptr+4, little);
+        value = den!==0 ? num/den : num;
+      }
+    }catch(e){ value=null; }
+    tags[tag]=value;
+  }
+  return {tags};
+}
+
+/* ============================================================
+   ERROR LEVEL ANALYSIS
+   ============================================================ */
+function computeELA(){
+  return new Promise((resolve)=>{
+    const w = canvasOrig.width, h = canvasOrig.height;
+    const quality = 0.90;
+    const dataURL = canvasOrig.toDataURL('image/jpeg', quality);
+    const img2 = new Image();
+    img2.onload = function(){
+      const tmp = document.createElement('canvas');
+      tmp.width=w; tmp.height=h;
+      const tctx = tmp.getContext('2d');
+      tctx.drawImage(img2,0,0,w,h);
+      const resavedData = tctx.getImageData(0,0,w,h).data;
+      const origData = canvasOrig.getContext('2d').getImageData(0,0,w,h).data;
+
+      canvasELA.width=w; canvasELA.height=h;
+      const ectx = canvasELA.getContext('2d');
+      const outImg = ectx.createImageData(w,h);
+      const amplify = 12;
+
+      const gridN = 8;
+      const blockW = Math.max(1,Math.floor(w/gridN)), blockH = Math.max(1,Math.floor(h/gridN));
+      const blockSums = new Array(gridN*gridN).fill(0);
+      const blockCounts = new Array(gridN*gridN).fill(0);
+
+      for(let p=0;p<origData.length;p+=4){
+        const dr = Math.abs(origData[p]-resavedData[p]);
+        const dg = Math.abs(origData[p+1]-resavedData[p+1]);
+        const db = Math.abs(origData[p+2]-resavedData[p+2]);
+        const mag = (dr+dg+db)/3;
+        const amp = Math.min(255, mag*amplify);
+        outImg.data[p]=amp; outImg.data[p+1]=amp; outImg.data[p+2]=amp; outImg.data[p+3]=255;
+
+        const pixelIndex = p/4;
+        const px = pixelIndex % w, py = Math.floor(pixelIndex/w);
+        const bx = Math.min(gridN-1, Math.floor(px/blockW));
+        const by = Math.min(gridN-1, Math.floor(py/blockH));
+        const bi = by*gridN+bx;
+        blockSums[bi]+=mag; blockCounts[bi]++;
+      }
+      ectx.putImageData(outImg,0,0);
+
+      const blockMeans = blockSums.map((s,i)=> blockCounts[i]? s/blockCounts[i]:0);
+      const overallMean = blockMeans.reduce((a,b)=>a+b,0)/blockMeans.length;
+      const variance = blockMeans.reduce((a,b)=>a+Math.pow(b-overallMean,2),0)/blockMeans.length;
+      const stdev = Math.sqrt(variance);
+      const cv = overallMean>0.6 ? stdev/overallMean : 0;
+
+      resolve({ overallMean, stdev, cv });
+    };
+    img2.src = dataURL;
+  });
+}
+
+/* ============================================================
+   IMAGE REPORT
+   ============================================================ */
+runImageBtn.addEventListener('click', async ()=>{
+  runImageBtn.disabled = true;
+  runImageBtn.textContent = 'MEMPROSES...';
+  elaResult = await computeELA();
+  const isJPEG = /jpe?g/i.test(currentFile.type) || /\.jpe?g$/i.test(currentFile.name);
+  renderImageReport(exifData, elaResult, isJPEG);
+  runImageBtn.disabled = false;
+  runImageBtn.textContent = 'JALANKAN ANALISIS FORENSIK';
+  setCaseNumber();
+});
+
+function renderImageReport(exif, ela, isJPEG){
+  let score = 55;
+  let dataSignals = 0;
+  const findings = [];
+
+  if(exif){
+    dataSignals++;
+    findings.push('Metadata EXIF ditemukan pada berkas ('+[exif.make,exif.model].filter(Boolean).join(' ')+(exif.make||exif.model?'':'—')+').');
+    score += 12;
+    if(exif.exposureTime || exif.fNumber){
+      dataSignals++; score += 8;
+      findings.push('Parameter kamera (exposure/aperture) tercatat — konsisten dengan foto asli langsung dari perangkat, bukan hasil unduhan/tangkapan layar.');
+    }
+    if(exif.software){
+      findings.push('Software tercatat dalam metadata: "'+exif.software+'".');
+      if(isEditingSoftware(exif.software)){
+        score -= 28;
+        findings.push('PERHATIAN: software yang tercatat dikenal sebagai alat penyunting gambar.');
+      }
+    }
+    if(exif.gps) findings.push('Data lokasi GPS tersemat dalam metadata.');
+  } else {
+    findings.push('Metadata EXIF tidak ditemukan pada berkas ini — umum terjadi pada tangkapan layar, gambar hasil unduhan medsos/WhatsApp, atau berkas yang metadatanya sengaja dihapus.');
+  }
+
+  dataSignals++;
+  if(isJPEG){
+    if(ela.cv > 0.85){
+      score -= 22;
+      findings.push('Error Level Analysis (ELA) menunjukkan variasi kompresi tidak merata antar-area gambar (indeks variansi '+ela.cv.toFixed(2)+') — indikasi kemungkinan ada area yang disunting/ditempel dari sumber lain.');
+    } else if(ela.overallMean < 0.6){
+      findings.push('Perbedaan kompresi pada ELA sangat kecil secara keseluruhan — kurang cukup sinyal untuk menilai riwayat kompresi gambar ini.');
+    } else {
+      score += 10;
+      findings.push('Pola ELA relatif merata di seluruh gambar (indeks variansi '+ela.cv.toFixed(2)+') — tidak ada indikasi kuat area sunting lokal.');
+    }
+  } else {
+    findings.push('Format berkas bukan JPEG — hasil ELA kurang definitif untuk format ini dan hanya bersifat indikasi tambahan.');
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  let status;
+  if(dataSignals <= 1){
+    status = 'TIDAK DAPAT DIVERIFIKASI';
+    findings.push('Sinyal forensik yang tersedia terlalu sedikit pada berkas ini untuk memberikan vonis yang pasti.');
+  } else if(score >= 68) status = 'AMAN';
+  else if(score >= 40) status = 'MENCURIGAKAN';
+  else status = 'PALSU';
+
+  const confidence = dataSignals<=1 ? Math.min(score,50) : score;
+  const recommendation = getRecommendation(status);
+
+  renderReport(reportImage, status, confidence, findings, recommendation);
+}
+
+/* ============================================================
+   TEXT ANALYSIS
+   ============================================================ */
+const runTextBtn = document.getElementById('runTextBtn');
+const reportText = document.getElementById('reportText');
+
+runTextBtn.addEventListener('click', ()=>{
+  const text = document.getElementById('textInput').value.trim();
+  if(!text){ alert('Masukkan teks terlebih dahulu.'); return; }
+  renderTextReport(text);
+  setCaseNumber();
+});
+
+function renderTextReport(text){
+  const words = text.split(/\s+/).filter(Boolean);
+  const sentences = text.split(/[.!?]+/).map(s=>s.trim()).filter(Boolean);
+  const sentLens = sentences.map(s=>s.split(/\s+/).filter(Boolean).length);
+  const meanLen = sentLens.reduce((a,b)=>a+b,0)/(sentLens.length||1);
+  const variance = sentLens.reduce((a,b)=>a+Math.pow(b-meanLen,2),0)/(sentLens.length||1);
+  const stdevLen = Math.sqrt(variance);
+  const cv = meanLen>0 ? stdevLen/meanLen : 0;
+
+  const uniqueWords = new Set(words.map(w=>w.toLowerCase().replace(/[^a-z0-9à-ÿ]/gi,'')).filter(Boolean));
+  const ttr = words.length ? uniqueWords.size/words.length : 0;
+
+  const repeated = findRepeatedPhrases(words);
+  const paras = paragraphStats(text);
+  const validParas = paras.filter(p=>p.sentCount>=1);
+  const docAvg = validParas.reduce((a,p)=>a+p.avg,0)/(validParas.length||1);
+  const styleShift = validParas.filter((p,i)=> p.sentCount>=2 && docAvg>0 && Math.abs(p.avg-docAvg)/docAvg > 0.5);
+
+  const dates = extractDates(text);
+  const numbers = extractNumbers(text);
+
+  let score = 60;
+  const findings = [];
+
+  if(words.length < 40){
+    renderReport(reportText, 'TIDAK DAPAT DIVERIFIKASI', 35,
+      ['Teks yang dimasukkan terlalu pendek ('+words.length+' kata) untuk analisis pola yang bermakna.',
+       'Minimal disarankan beberapa paragraf agar variasi kalimat dan gaya bahasa dapat dinilai.'],
+      getRecommendation('TIDAK DAPAT DIVERIFIKASI'));
+    return;
+  }
+
+  if(sentLens.length>=6){
+    if(cv < 0.30){
+      score -= 15;
+      findings.push('Variasi panjang kalimat sangat rendah (indeks='+cv.toFixed(2)+') — pola ini kerap ditemukan pada teks yang dihasilkan otomatis/AI atau template, meski tidak konklusif dengan sendirinya.');
+    } else {
+      score += 8;
+      findings.push('Variasi panjang kalimat berada dalam rentang yang wajar untuk tulisan manusia (indeks='+cv.toFixed(2)+').');
+    }
+  }
+
+  if(words.length>150){
+    if(ttr < 0.35){
+      score -= 8;
+      findings.push('Rasio kosakata unik terhadap total kata cukup rendah ('+(ttr*100).toFixed(0)+'%) — indikasi pengulangan/templating.');
+    } else {
+      findings.push('Rasio kosakata unik terhadap total kata dalam rentang wajar ('+(ttr*100).toFixed(0)+'%).');
+    }
+  }
+
+  if(repeated.length>0){
+    score -= 15;
+    findings.push('Ditemukan frasa berulang signifikan (5 kata berturut-turut muncul ≥3×): "'+repeated.slice(0,3).join('" · "')+'".');
+  }
+
+  if(styleShift.length>0){
+    score -= 12;
+    styleShift.slice(0,2).forEach(p=>{
+      const idx = validParas.indexOf(p)+1;
+      findings.push('Paragraf ke-'+idx+' menunjukkan panjang kalimat yang menyimpang signifikan dari rata-rata dokumen — indikasi kemungkinan teks disisipkan dari sumber berbeda.');
+    });
+  }
+
+  if(dates.length>0){
+    findings.push('Tanggal terdeteksi dalam teks: '+dates.slice(0,8).join(', ')+'. Periksa konsistensi tanggal ini secara manual terhadap konteks dokumen.');
+  }
+  if(numbers.length>0){
+    findings.push('Angka/nilai penting terdeteksi: '+numbers.slice(0,8).join(', ')+'. Disarankan verifikasi silang dengan sumber asli.');
+  }
+
+  if(findings.length===0){
+    findings.push('Tidak ditemukan pola anomali yang jelas pada pemeriksaan heuristik ini.');
+  }
+
+  score = Math.max(0, Math.min(100, score));
+  let status;
+  if(score >= 68) status = 'AMAN';
+  else if(score >= 40) status = 'MENCURIGAKAN';
+  else status = 'PALSU';
+
+  // Heuristik teks bersifat lemah — hindari vonis PALSU terlalu percaya diri tanpa sinyal kuat
+  if(status === 'PALSU' && repeated.length===0 && styleShift.length===0){
+    status = 'MENCURIGAKAN';
+  }
+
+  renderReport(reportText, status, score, findings, getRecommendation(status));
+}
+
+function findRepeatedPhrases(words){
+  const n=5, map={};
+  for(let i=0;i+n<=words.length;i++){
+    const gram = words.slice(i,i+n).join(' ').toLowerCase();
+    const cleaned = gram.replace(/[^a-z0-9à-ÿ ]/gi,'');
+    if(cleaned.length<10) continue;
+    map[gram]=(map[gram]||0)+1;
+  }
+  return Object.entries(map).filter(([g,c])=>c>=3).map(([g])=>g);
+}
+function paragraphStats(text){
+  const paras = text.split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
+  return paras.map(p=>{
+    const sents = p.split(/[.!?]+/).map(s=>s.trim()).filter(Boolean);
+    const lens = sents.map(s=>s.split(/\s+/).filter(Boolean).length);
+    const avg = lens.length ? lens.reduce((a,b)=>a+b,0)/lens.length : 0;
+    return {avg, sentCount:sents.length};
+  });
+}
+function extractDates(text){
+  const results = new Set();
+  const iso = text.match(/\b\d{4}-\d{2}-\d{2}\b/g) || [];
+  iso.forEach(d=>results.add(d));
+  const named = text.match(/\b\d{1,2}\s(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s\d{2,4}\b/gi) || [];
+  named.forEach(d=>results.add(d));
+  const slash = text.match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g) || [];
+  slash.forEach(d=>results.add(d));
+  return Array.from(results);
+}
+function extractNumbers(text){
+  const results = new Set();
+  (text.match(/\bRp\s?[\d.,]+\b/gi)||[]).forEach(n=>results.add(n.trim()));
+  (text.match(/\$\s?[\d.,]+\b/g)||[]).forEach(n=>results.add(n.trim()));
+  (text.match(/\b\d+([.,]\d+)?\s?%/g)||[]).forEach(n=>results.add(n.trim()));
+  return Array.from(results);
+}
+
+/* ============================================================
+   SHARED REPORT RENDERER
+   ============================================================ */
+function getRecommendation(status){
+  switch(status){
+    case 'AMAN':
+      return 'Tidak ditemukan indikasi kuat manipulasi pada pemeriksaan ini. Tetap disarankan verifikasi silang dengan sumber asli/pihak terkait untuk kasus yang penting.';
+    case 'MENCURIGAKAN':
+      return 'Lakukan verifikasi manual lanjutan: bandingkan dengan sumber asli, gunakan tools forensik profesional (mis. ExifTool, FotoForensics) untuk analisis lebih dalam, dan konfirmasi langsung ke pihak/pembuat dokumen.';
+    case 'PALSU':
+      return 'Indikasi manipulasi cukup kuat. Jangan gunakan sebagai bukti tanpa verifikasi forensik profesional lebih lanjut. Simpan berkas asli beserta metadatanya untuk keperluan investigasi lanjutan.';
+    default:
+      return 'Sinyal/data forensik yang tersedia tidak cukup untuk kesimpulan yang meyakinkan. Sediakan berkas asli beresolusi penuh (bukan hasil kompresi ulang/tangkapan layar) atau gunakan alat forensik digital profesional untuk analisis lebih lanjut.';
+  }
+}
+function renderReport(container, status, confidence, findings, recommendation){
+  const statusClass = 'status-' + status.replace(/ /g,'_');
+  const color = status==='AMAN' ? 'var(--safe)' : status==='MENCURIGAKAN' ? 'var(--warn)' : status==='PALSU' ? 'var(--danger)' : 'var(--unknown)';
+  const findingsHtml = findings.map(f=>'<li>'+escapeHtml(f)+'</li>').join('');
+
+  container.innerHTML = `
+    <div class="stamp ${statusClass}">${status}</div>
+    <h3>LAPORAN ANALISIS FORENSIK</h3>
+    <div class="field">
+      <div class="field-label">STATUS KEASLIAN</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:17px;color:${color};">${status}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">TINGKAT KEYAKINAN</div>
+      <div class="conf-bar-track"><div class="conf-bar-fill" style="width:${confidence}%;background:${color};"></div></div>
+      <div class="conf-num">${Math.round(confidence)}% &middot; indikatif berdasarkan heuristik, bukan probabilitas statistik formal</div>
+    </div>
+    <div class="field">
+      <div class="field-label">TEMUAN UTAMA</div>
+      <ul class="findings">${findingsHtml}</ul>
+    </div>
+    <div class="field">
+      <div class="field-label">REKOMENDASI TINDAKAN</div>
+      <p class="recommend">${escapeHtml(recommendation)}</p>
+    </div>
+  `;
+  container.hidden = false;
+}
+</script>
+</body>
+</html>
