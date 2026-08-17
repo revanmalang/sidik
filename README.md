@@ -92,8 +92,7 @@ Untuk versi HTML, cukup buka `web/sidik.html` langsung di browser — tidak ada 
 - [ ] Mode batch (banyak file sekaligus)
 
 ## Lisensi
-
-Sesuaikan dengan preferensi Anda (mis. MIT) sebelum publish.
+Rev
 
 ---
 
